@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Stack for SPA hosted on s3 with cloudfront to serve content
+
+Parameters:
+  SolutionName:
+    Type: String
+  ArtifactName:
+    Type: String
+  S3Bucket:
+    Type: String
+
+Resources:
+  ApiGwFacade:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${SolutionName}-facade'
+      Description: !Sub 'This API gateway acts as a facade for ${SolutionName}.'
+      ProtocolType: HTTP
+      RouteKey: 'ANY /{proxy+}'
+      Target: !GetAtt ProxyLambda.Arn
+      Tags:
+        SolutionName: !Ref SolutionName
+        ArtifactName: !Ref ArtifactName
+
+  LambdaApiGatewayInvoke:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ProxyLambda.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGwFacade}/*/*/{proxy+}'
+
+
+  ProxyLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: !Ref ArtifactName
+      Description: !Sub 'Proxy lambda for HTTP API GW'
+      FunctionName: !Sub '${SolutionName}-${AWS::AccountId}'
+      Handler: pl.software2.awsblocks.AppHandler::handleRequest
+      MemorySize: 512
+      PackageType: Zip
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: java21
+      Timeout: 15
+      Tags:
+        - Key: SolutionName
+          Value: !Ref SolutionName
+        - Key: ArtifactName
+          Value: !Ref ArtifactName
+    DependsOn:
+      - LambdaLogGroup
+      - LambdaExecutionRole
+
+
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${SolutionName}-${AWS::AccountId}'
+      RetentionInDays: 5
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: lambda-logging
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${SolutionName}-${AWS::AccountId}:*
+
+Outputs:
+  ApiGwFacade:
+    Description: Api Gw Id
+    Value: !Sub 'https://${ApiGwFacade}.execute-api.${AWS::Region}.amazonaws.com'
+    Export:
+      Name: !Sub '${SolutionName}-facade-endpoint'

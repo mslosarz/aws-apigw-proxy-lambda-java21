@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Stack for SPA hosted on s3 with cloudfront to serve content
+
+Parameters:
+  SolutionName:
+    Type: String
+
+Resources:
+  LambdaS3Storage:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: !Sub '${SolutionName}-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Suspended
+      Tags:
+        - Key: SolutionName
+          Value: !Ref SolutionName
+
+Outputs:
+  S3Bucket:
+    Description: Bucket name
+    Value: !Ref LambdaS3Storage
+    Export:
+      Name: !Sub '${SolutionName}-lambda-s3-storage'
