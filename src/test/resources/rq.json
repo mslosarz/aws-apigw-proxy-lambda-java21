@@ -1,7 +1,7 @@
 {
   "version": "2.0",
   "routeKey": "ANY /{proxy+}",
-  "rawPath": "/",
+  "rawPath": "/echo",
   "rawQueryString": "",
   "cookies": null,
   "headers": {
@@ -43,7 +43,7 @@
     "timeEpoch": 1741863915413,
     "http": {
       "method": "GET",
-      "path": "/",
+      "path": "/echo",
       "protocol": "HTTP/1.1",
       "sourceIp": "12.37.52.13",
       "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
