@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Stack for SPA hosted on s3 with cloudfront to serve content
+Description: Stack for API GW that integrates with lambda (proxy)
 
 Parameters:
   SolutionName:
